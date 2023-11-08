@@ -15,4 +15,4 @@
     register: s3bucket
   - name: Upload Data in S3 bucket
     shell: >
-      aws s3 cp /Users/gmidha/Downloads/msft2d.csv s3://gmidha-bigdata-nov07/msft2d.csv
+      aws s3 cp ./msftdata.csv s3://gmidha-bigdata-nov07/msftdata.csv
