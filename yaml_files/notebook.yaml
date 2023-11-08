@@ -19,6 +19,21 @@ spec:
                 --ServerApp.token=''
                 --ServerApp.password=''
                 --ServerApp.base_url=/notebook/gmidha/python-minimal-notebook
+            - name: AWS_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  key: AWS_ACCESS_KEY_ID
+                  name: python-minimal-notebook-envs
+            - name: AWS_DEFAULT_REGION
+              valueFrom:
+                secretKeyRef:
+                  key: AWS_DEFAULT_REGION
+                  name: python-minimal-notebook-envs
+            - name: AWS_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  key: AWS_SECRET_ACCESS_KEY
+                  name: python-minimal-notebook-envs
           ports:
             - name: notebook-port
               containerPort: 8888
