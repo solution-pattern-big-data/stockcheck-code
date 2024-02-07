@@ -9,3 +9,5 @@ tensorflow
 boto3
 tf2onnx
 onnx
+pandas_datareader==0.10.0
+yfinance
