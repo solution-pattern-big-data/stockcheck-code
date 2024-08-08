@@ -7,8 +7,9 @@ matplotlib
 scikit-learn
 tensorflow==2.15.0
 boto3
-tf2onnx
+tf2onnx==1.16.1
 onnx
 pandas_datareader==0.10.0
 yfinance
 minio
+protobuf<5,>=4.21.1
