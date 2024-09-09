@@ -1,0 +1,64 @@
+# PIPELINE DEFINITION
+# Name: add-pipeline
+# Description: Pipeline to add values.
+# Inputs:
+#    ticker: str [Default: 'AAPL']
+components:
+  comp-download-data:
+    executorLabel: exec-download-data
+deploymentSpec:
+  executors:
+    exec-download-data:
+      container:
+        args:
+        - --executor_input
+        - '{{$}}'
+        - --function_to_execute
+        - download_data
+        command:
+        - sh
+        - -c
+        - "\nif ! [ -x \"$(command -v pip)\" ]; then\n    python3 -m ensurepip ||\
+          \ python3 -m ensurepip --user || apt-get install python3-pip\nfi\n\nPIP_DISABLE_PIP_VERSION_CHECK=1\
+          \ python3 -m pip install --quiet --no-warn-script-location 'kfp==2.8.0'\
+          \ '--no-deps' 'typing-extensions>=3.7.4,<5; python_version<\"3.9\"'  &&\
+          \  python3 -m pip install --quiet --no-warn-script-location 'yfinance' &&\
+          \ \"$0\" \"$@\"\n"
+        - sh
+        - -ec
+        - 'program_path=$(mktemp -d)
+
+
+          printf "%s" "$0" > "$program_path/ephemeral_component.py"
+
+          _KFP_RUNTIME=true python3 -m kfp.dsl.executor_main                         --component_module_path                         "$program_path/ephemeral_component.py"                         "$@"
+
+          '
+        - "\nimport kfp\nfrom kfp import dsl\nfrom kfp.dsl import *\nfrom typing import\
+          \ *\n\ndef download_data():\n    import yfinance as yfin\n    \"\"\"Calculate\
+          \ the sum of the two arguments.\"\"\"\n    #ticker = os.environ.get('TICKER')\n\
+          \    ticker = 'AAPL'\n    df = yfin.download(tickers=ticker, period='6mo')\n\
+          \    dataset = df['Close'].fillna(method='ffill')\n    dataset = dataset.values.reshape(-1,\
+          \ 1)\n\n"
+        image: image-registry.openshift-image-registry.svc:5000/openshift/python:latest
+pipelineInfo:
+  description: Pipeline to add values.
+  name: add-pipeline
+root:
+  dag:
+    tasks:
+      download-data:
+        cachingOptions:
+          enableCache: true
+        componentRef:
+          name: comp-download-data
+        taskInfo:
+          name: download-data
+  inputDefinitions:
+    parameters:
+      ticker:
+        defaultValue: AAPL
+        isOptional: true
+        parameterType: STRING
+schemaVersion: 2.1.0
+sdkVersion: kfp-2.8.0
