@@ -6,6 +6,12 @@
 components:
   comp-download-data:
     executorLabel: exec-download-data
+    outputDefinitions:
+      artifacts:
+        data_path:
+          artifactType:
+            schemaTitle: system.Artifact
+            schemaVersion: 0.0.1
 deploymentSpec:
   executors:
     exec-download-data:
@@ -22,8 +28,8 @@ deploymentSpec:
           \ python3 -m ensurepip --user || apt-get install python3-pip\nfi\n\nPIP_DISABLE_PIP_VERSION_CHECK=1\
           \ python3 -m pip install --quiet --no-warn-script-location 'kfp==2.8.0'\
           \ '--no-deps' 'typing-extensions>=3.7.4,<5; python_version<\"3.9\"'  &&\
-          \  python3 -m pip install --quiet --no-warn-script-location 'yfinance' 'scikit-learn'\
-          \ 'tensorflow' 'tf2onnx' 'onnx' 'minio' && \"$0\" \"$@\"\n"
+          \  python3 -m pip install --quiet --no-warn-script-location 'yfinance' 'pandas'\
+          \ && \"$0\" \"$@\"\n"
         - sh
         - -ec
         - 'program_path=$(mktemp -d)
@@ -35,36 +41,13 @@ deploymentSpec:
 
           '
         - "\nimport kfp\nfrom kfp import dsl\nfrom kfp.dsl import *\nfrom typing import\
-          \ *\n\ndef download_data():\n    import yfinance as yfin\n    from sklearn.preprocessing\
-          \ import MinMaxScaler\n    from tensorflow import keras\n    from keras.models\
-          \ import Sequential\n    from keras.layers import Dense, LSTM, Dropout\n\
-          \    from tf2onnx import convert\n    import onnx\n    from minio import\
-          \ Minio\n    \"\"\"Calculate the sum of the two arguments.\"\"\"\n    #ticker\
-          \ = os.environ.get('TICKER')\n    ticker = 'AAPL'\n    df = yfin.download(tickers=ticker,\
-          \ period='6mo')\n    dataset = df['Close'].fillna(method='ffill')\n    dataset\
-          \ = dataset.values.reshape(-1, 1)\n    print(dataset.shape)\n\n    scaler\
-          \ = MinMaxScaler(feature_range=(0, 1))\n    scaler = scaler.fit(dataset)\n\
-          \    dataset = scaler.transform(dataset)\n\n    # generate the input and\
-          \ output sequences\n    n_lookback = 60  # length of input sequences (lookback\
-          \ period)\n    n_forecast = 30  # length of output sequences (forecast period)\n\
-          \n    X = []\n    Y = []\n\n    for i in range(n_lookback, len(dataset)\
-          \ - n_forecast + 1):\n        X.append(dataset[i - n_lookback: i])\n   \
-          \     Y.append(dataset[i: i + n_forecast])\n\n    X = np.array(X)\n    Y\
-          \ = np.array(Y)\n\n    # fit the model\n    model = Sequential(name=\"forecast\"\
-          )\n    model.add(LSTM(units=50, return_sequences=True, input_shape=(n_lookback,\
-          \ 1)))\n    model.add(LSTM(units=50))\n    model.add(Dense(n_forecast))\n\
-          \n    model.compile(loss='mean_squared_error', optimizer='adam')\n    model.fit(X,\
-          \ Y, epochs=100, batch_size=32, verbose=0)\n\n    # generate the forecasts\n\
-          \    X_ = dataset[- n_lookback:]  # last available input sequence\n    X_\
-          \ = X_.reshape(1, n_lookback, 1)\n\n    Y_ = model.predict(X_).reshape(-1,\
-          \ 1)\n    Y_ = scaler.inverse_transform(Y_)\n\n    model.save(\"./forecast.keras\"\
-          )\n    onnx_model, _ = tf2onnx.convert.from_keras(model)\n    onnx.save(onnx_model,\
-          \ \"./forecast.onnx\")\n\n    client = Minio(\n    \"minio.stock-predict.svc.cluster.local:9000\"\
-          ,\n    access_key=\"minioadmin\",\n    secret_key=\"minioadmin\",\n    secure=False)\n\
-          \n    buckets = client.list_buckets()\n    for bucket in buckets:\n    \
-          \    print(bucket.name, bucket.creation_date)\n\n    bucket_name = \"models\"\
-          \n    source_file = \"./forecast.onnx\"\n    destination_file = \"forecast.onnx\"\
-          \n    client.fput_object(bucket_name, destination_file, source_file)\n\n"
+          \ *\n\ndef download_data(data_path: OutputPath()):\n    import yfinance\
+          \ as yfin\n    import pandas as pd\n    \"\"\"Calculate the sum of the two\
+          \ arguments.\"\"\"\n    #ticker = os.environ.get('TICKER')\n    ticker =\
+          \ 'AAPL'\n    df = yfin.download(tickers=ticker, period='6mo')\n    dataset\
+          \ = df['Close'].fillna(method='ffill')\n    dataset = dataset.values.reshape(-1,\
+          \ 1)\n    print(dataset.shape)\n    data = pd.DataFrame(dataset)\n    data.to_csv('data.csv',\
+          \ header=False, index=False)\n\n"
         image: image-registry.openshift-image-registry.svc:5000/openshift/python:latest
 pipelineInfo:
   description: Pipeline to add values.
