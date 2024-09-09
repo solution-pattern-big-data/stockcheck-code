@@ -13,6 +13,7 @@ def download_data():
     df = yfin.download(tickers=ticker, period='6mo')
     dataset = df['Close'].fillna(method='ffill')
     dataset = dataset.values.reshape(-1, 1)
+    print(dataset.shape)
 
 @dsl.pipeline()
 def add_pipeline(ticker: str = 'AAPL'):
