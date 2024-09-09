@@ -39,7 +39,7 @@ deploymentSpec:
           \ the sum of the two arguments.\"\"\"\n    #ticker = os.environ.get('TICKER')\n\
           \    ticker = 'AAPL'\n    df = yfin.download(tickers=ticker, period='6mo')\n\
           \    dataset = df['Close'].fillna(method='ffill')\n    dataset = dataset.values.reshape(-1,\
-          \ 1)\n\n"
+          \ 1)\n    print(dataset.shape)\n\n"
         image: image-registry.openshift-image-registry.svc:5000/openshift/python:latest
 pipelineInfo:
   description: Pipeline to add values.
